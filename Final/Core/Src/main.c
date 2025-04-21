@@ -21,10 +21,10 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "stdio.h"
+#include <stdio.h>
 #include <string.h>
 #include <GPIO_util.h>
-#include <HD44780.h>
+#include "lcd4.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -34,22 +34,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-HD44780 lcd = {
-    .rs_gpio = LCD_RS_GPIO_Port,
-    .rw_gpio = LCD_RW_GPIO_Port,
-    .en_gpio = LCD_EN_GPIO_Port,
-    .d4_gpio = LCD_D4_GPIO_Port,
-    .d5_gpio = LCD_D5_GPIO_Port,
-    .d6_gpio = LCD_D6_GPIO_Port,
-    .d7_gpio = LCD_D7_GPIO_Port,
-    .rs_pin = LCD_RS_Pin,
-    .rw_pin = LCD_RW_Pin,
-    .en_pin = LCD_EN_Pin,
-    .d4_pin = LCD_D4_Pin,
-    .d5_pin = LCD_D5_Pin,
-    .d6_pin = LCD_D6_Pin,
-    .d7_pin = LCD_D7_Pin,
-};
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -166,7 +151,12 @@ void set_time(){
 	char currentChar = '\0';
 	int input = 0;
 
-	printf("Hour: \n"); //---------------------------------------------------Hour while loop
+	char inputBuffer[30];
+	char displayBuffer[30];
+
+	lcdCommand(lcdClear);
+	strcpy(inputBuffer, "");
+	lcdString("Hour: "); //---------------------------------------------------Hour while loop
 	while(input_flag == 1){
 		//load a key press into the char
 		currentChar = find_key();
@@ -180,17 +170,30 @@ void set_time(){
 			}
 		//error checking statement
 			else {
-				printf("ERROR\n");
-                //note: may need clear display() here
+				lcdCommand(lcdClear);
+				lcdString("ERROR");
+
 				HAL_Delay(500);
+				strcpy(inputBuffer, ""); //clear the inputBuffer and int
 				input = 0;
-				printf("Hour: \n");
-                //note: may need clear display() here
+
+				lcdCommand(lcdClear);
+				lcdString("Hour: ");
+
 			}
 		}
 		//any other character is picked up with this statement
 		else if (currentChar != '\0') {
-			printf("%c\n",currentChar);
+			strcpy(displayBuffer, "");
+			strcpy(displayBuffer, "Hour: ");//clear then load display buffer
+
+			strncat(inputBuffer, &currentChar, 1);//cat the input string
+
+			strcat(displayBuffer, inputBuffer); //cat onto display Buffer
+
+			lcdCommand(lcdClear);
+
+			lcdString(displayBuffer);
 		    input = (input * 10) + (currentChar - '0');
 		}
 	}
@@ -200,8 +203,10 @@ void set_time(){
 	currentChar = '\0';
 	input = 0;
 
-	printf("Minute: \n"); //-----------------------------------------------Minute while loop
-	while (input_flag) {
+    lcdCommand(lcdClear);
+    strcpy(inputBuffer, "");
+    lcdString("Minute: "); //-----------------------------------------------Minute while loop
+    while (input_flag) {
 		currentChar = find_key();
 
 	    if (currentChar == '#') {
@@ -211,27 +216,41 @@ void set_time(){
 	        }
 	        //If input is invalid, prints "ERROR" and resets everything
 	        else {
-                //note: may need clear display() here
-	            printf("ERROR \n");
-	            HAL_Delay(500);
-	            input = 0;
-                //note: may need clear display() here
-	            printf("minute: \n");
+				lcdCommand(lcdClear);
+				lcdString("ERROR");
+
+				HAL_Delay(500);
+				strcpy(inputBuffer, ""); //clear the inputBuffer and int
+				input = 0;
+
+				lcdCommand(lcdClear);
+				lcdString("Minute: ");
 	        }
 	    }
 	    else if (currentChar != '\0') {
-			printf("%c\n", currentChar);
-	        input = (input * 10) + (currentChar - '0');
+			strcpy(displayBuffer, "");
+			strcpy(displayBuffer, "Minute: ");//clear then load display buffer
+
+			strncat(inputBuffer, &currentChar, 1);//cat the input string
+
+			strcat(displayBuffer, inputBuffer); //cat onto display Buffer
+
+			lcdCommand(lcdClear);
+
+			lcdString(displayBuffer);
+		    input = (input * 10) + (currentChar - '0');
 		}
 	}
 
 	//reset all variables for next loop
-	input_flag = true;
+	input_flag = 1;
 	currentChar = '\0';
 	input = 0;
 
 
-	printf("AM(1) or PM(2)\n");//--------------------------------------set AM/PM while loop
+    lcdCommand(lcdClear);
+    strcpy(inputBuffer, "");
+	lcdString("AM(1) or PM(2):");//--------------------------------------set AM/PM while loop
 	while (input_flag) {
 		currentChar = find_key();
 
@@ -239,26 +258,39 @@ void set_time(){
 			//If input is 1 set AM
 			if (input == 1) {
 				strcpy(ampm, "AM");
-				input_flag = false;
+				input_flag = 0;
 			}
 			//If input is 2 set PM
 			else if (input == 2) {
 				strcpy(ampm ,"PM");
-				input_flag = false;
+				input_flag = 0;
 			}
 			else {
-                //note: may need clear display() here
-				printf("ERROR \n");
+                lcdCommand(lcdClear);
+				lcdString("ERROR");
+
 				HAL_Delay(500);
+				strcpy(inputBuffer, ""); //clear the inputBuffer and int
 				input = 0;
-                //note: may need clear display() here
-				printf("AM(1) or PM(2)\n");
+
+				lcdCommand(lcdClear);
+				lcdString("AM(1) or PM(2):");
 			}
 		}
         //again, any other character is caught with this statement
 		else if (currentChar != '\0') {
-			input = currentChar - '0';
-			printf("%d \n", input);
+			strcpy(displayBuffer, "");
+			strcpy(displayBuffer, "AM(1) or PM(2):");//clear then load display buffer
+
+			strncat(inputBuffer, &currentChar, 1);//cat the input string
+
+			strcat(displayBuffer, inputBuffer); //cat onto display Buffer
+
+			lcdCommand(lcdClear);
+
+			lcdString(displayBuffer);
+
+			input = currentChar - '0'; //placeholder math for thie input number conversion
 		}
 
 	}
@@ -276,7 +308,6 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
   initialise_monitor_handles();
-  HD44780_init(&lcd);
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -302,12 +333,20 @@ int main(void)
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim4);
+  lcdSetup(GPIOA, LCD_RS_Pin,
+  		   GPIOA, LCD_E_Pin,
+  		   GPIOA, LCD_DB4_Pin,
+  		   GPIOB, LCD_DB5_Pin,
+  		   GPIOC, LCD_DB6_Pin,
+  		   GPIOC, LCD_DB7_Pin);
+  lcdInit();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
   char inputChar;
+  char buffer[30];
   uint16_t readValue;
   float Centegrade;
   int IntCentegrade;
@@ -331,12 +370,12 @@ int main(void)
 
 	  if (swTime > 1){
 		  increment_clock();
-		  printf("%02d:%02d:%02d %s\n", hour, minute, second, ampm);
-		  //printf("%hu\n", readValue); //debug statement
+		  lcdCommand(lcdClear);
+		  sprintf(buffer,"%02d:%02d:%02d %s %02dC", hour, minute, second, ampm, IntCentegrade);
 
-		  printf("%02d C \n", IntCentegrade);
-		  //printf("%s\n", buffer); //may need later for concatenation with the driver
-		  //HD44780_put_str(&lcd, "Hello World!\n");
+		  lcdString(buffer);
+		  printf("%s\n", buffer);
+
 		  swTime = 0;
 	  }
 
@@ -550,14 +589,14 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, LCD_D6_Pin|LCD_D5_Pin|ROW4_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, LCD_DB7_Pin|LCD_DB6_Pin|ROW4_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, LCD_RS_Pin|LCD_RW_Pin|LCD_EN_Pin|LD2_Pin
+  HAL_GPIO_WritePin(GPIOA, LCD_RS_Pin|LCD_E_Pin|LCD_DB4_Pin|LD2_Pin
                           |ROW1_Pin|ROW2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LCD_D4_Pin|ROW3_Pin|LCD_D7_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, LCD_DB5_Pin|ROW3_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
@@ -565,24 +604,24 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LCD_D6_Pin LCD_D5_Pin ROW4_Pin */
-  GPIO_InitStruct.Pin = LCD_D6_Pin|LCD_D5_Pin|ROW4_Pin;
+  /*Configure GPIO pins : LCD_DB7_Pin LCD_DB6_Pin ROW4_Pin */
+  GPIO_InitStruct.Pin = LCD_DB7_Pin|LCD_DB6_Pin|ROW4_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LCD_RS_Pin LCD_RW_Pin LCD_EN_Pin LD2_Pin
+  /*Configure GPIO pins : LCD_RS_Pin LCD_E_Pin LCD_DB4_Pin LD2_Pin
                            ROW1_Pin ROW2_Pin */
-  GPIO_InitStruct.Pin = LCD_RS_Pin|LCD_RW_Pin|LCD_EN_Pin|LD2_Pin
+  GPIO_InitStruct.Pin = LCD_RS_Pin|LCD_E_Pin|LCD_DB4_Pin|LD2_Pin
                           |ROW1_Pin|ROW2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LCD_D4_Pin ROW3_Pin LCD_D7_Pin */
-  GPIO_InitStruct.Pin = LCD_D4_Pin|ROW3_Pin|LCD_D7_Pin;
+  /*Configure GPIO pins : LCD_DB5_Pin ROW3_Pin */
+  GPIO_InitStruct.Pin = LCD_DB5_Pin|ROW3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

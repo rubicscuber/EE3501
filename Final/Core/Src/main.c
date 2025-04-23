@@ -69,6 +69,7 @@ extern void initialise_monitor_handles(void);
 
 //clock switching variable toggled by the hardware interrupt
 volatile int swTime = 0;
+volatile int tempFlop = 0;
 
 //global clock variables
 int hour;
@@ -348,8 +349,14 @@ int main(void)
   char inputChar;
   char buffer[30];
   uint16_t readValue;
+
   float Centegrade;
-  int IntCentegrade;
+  int intCentegrade;
+
+  float farenheight;
+  int intFarenheight;
+
+
 
   hour = 11;
   minute = 59;
@@ -365,14 +372,25 @@ int main(void)
 	  HAL_ADC_Start(&hadc1);
 	  HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
 	  readValue = HAL_ADC_GetValue(&hadc1);
+
 	  Centegrade = (readValue * 5 / 41) - 55;
-	  IntCentegrade = Centegrade;
+	  farenheight = Centegrade * (9/5) + 55;
+
+	  intCentegrade = Centegrade;
+	  intFarenheight = farenheight;
+
+
 
 	  if (swTime > 1){
 		  increment_clock();
 		  lcdCommand(lcdClear);
-		  sprintf(buffer,"%02d:%02d:%02d %s %02dC", hour, minute, second, ampm, IntCentegrade);
 
+		  if (tempFlop == 0){
+			  sprintf(buffer,"%02d:%02d:%02d %s %02dF", hour, minute, second, ampm, intFarenheight);
+		  }
+		  else{
+			  sprintf(buffer,"%02d:%02d:%02d %s %02dC", hour, minute, second, ampm, intCentegrade);
+		  }
 		  lcdString(buffer);
 		  printf("%s\n", buffer);
 
@@ -598,11 +616,11 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, LCD_DB5_Pin|ROW3_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : B1_Pin */
-  GPIO_InitStruct.Pin = B1_Pin;
+  /*Configure GPIO pin : BLUE_PUSH_BUTTON_Pin */
+  GPIO_InitStruct.Pin = BLUE_PUSH_BUTTON_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(BLUE_PUSH_BUTTON_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LCD_DB7_Pin LCD_DB6_Pin ROW4_Pin */
   GPIO_InitStruct.Pin = LCD_DB7_Pin|LCD_DB6_Pin|ROW4_Pin;
@@ -639,6 +657,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 1, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
 }
@@ -649,6 +671,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 		//toggle the global int switch to 1 (reset in the main loop)
 		swTime ++;
 		HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+	}
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
+	if (GPIO_Pin == BLUE_PUSH_BUTTON_Pin){
+		if (tempFlop == 0){
+			tempFlop = 1;
+		}
+		else
+			tempFlop = 0;
 	}
 }
 /* USER CODE END 4 */
